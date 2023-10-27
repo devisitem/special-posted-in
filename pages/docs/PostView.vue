@@ -1,10 +1,10 @@
 <template>
-  <div class="post-container" :class="{prepare : prepareStore.isPrepare}">
+  <div class="post-container">
     <Head>
       <Meta property="og:title" v-bind:content="state.post?.title.replace('\n', '')" />
       <Meta property="og:description" v-bind:content="state.meta?.description.replace('\n', '')" />
       <Meta property="og:image" v-bind:content="state.meta?.header.thumbnail" />
-      <Meta property="og:url" v-bind:content="blogInfo.domain + route.fullPath" />
+      <Meta property="og:url" v-bind:content="appCache.blogInfo.domain + route.fullPath" />
       <Meta name="description" :content="state.meta?.description.replace('\n', '')"/>
       <Title>{{ state.meta?.header.summary }}</Title>
     </Head>
@@ -14,12 +14,14 @@
         <div class="post-intro">
           <div class="reported-date">
             <font-awesome-icon class="clock-icon" :icon="['fa', 'clock']"/>
-            <span class="date-text" id="post-date-text">{{ state.post?.date }}</span>
+            <span class="date-text" id="post-date-text">{{ methods.toDateFormat(state.meta?.header.date) }}</span>
           </div>
         </div>
       </div>
       <div class="post-content-wrapper" id="document-content">
         <div class="post-content" :class="{ hide: state.meta?.header }" id="post-content-frame" v-html="state.post?.content"></div>
+        <div class="posting-date">
+        </div>
         <TagArea :tags="state.post?.tags" />
       </div>
     </div>
@@ -33,23 +35,34 @@
 <script lang="ts" setup>
 
 import VueUtterances from 'vue-utterances';
-import {
-  postMapStore
-} from "~/store";
+import {postMapStore} from "~/store";
 import TagArea from "~/components/layout/content/component/post-card/TagArea.vue";
-import { useRoute } from "vue-router";
-import { PostContent } from "~/class/implement/PostContent";
+import {useRoute} from "vue-router";
+import {PostContent} from "~/class/implement/PostContent";
 import {PagePost} from "~/class/implement/PagePost";
 import {computed, onMounted, reactive} from "vue";
 import {usePagePrepareStore} from "~/store/PreparePostStore";
-import {blogInfo} from "~/store/site";
+import appCache from "~/store/appCache";
+import {usePhotoViewStatusStore} from "~/store/PhotoViewStore";
 
+const photoViewStore = usePhotoViewStatusStore()
 const components = {
   TagArea
 }
 
+const methods = {
+  toDateFormat(data: Date) {
+    const date = new Date(data)
+    const year = date.getFullYear()
+    const computedMonth = date.getMonth() + 1
+    const month = computedMonth < 10 ? `0${computedMonth}` : computedMonth
+    const day = date.getDate()
 
-const prepareStore = usePagePrepareStore();
+    return `${year}-${month}-${day}`
+  }
+}
+
+const prepareStore = usePagePrepareStore()
 const route = useRoute()
 
 prepareStore.prepare()
@@ -60,10 +73,6 @@ const state = reactive({
   }),
   post: computed<PagePost | null>(() => {
     const post: PagePost | null = PagePost.of(state.meta)
-
-    setTimeout(() => {
-      prepareStore.done()
-    }, 150)
 
     return post
   })
@@ -80,7 +89,14 @@ onMounted(() => {
     table.remove()
   })
 
-  // 단축키 정보 확인
+  const imageTags = document.querySelectorAll('#post-content-frame img')
+  imageTags.forEach((imgTag, index) => {
+    imgTag.addEventListener('click', (e) => {
+      photoViewStore.open(index +1)
+    })
+  })
+
+  photoViewStore.load(state.meta.header.images)
 })
 
 </script>
@@ -126,7 +142,7 @@ onMounted(() => {
     box-shadow: rgba(50, 50, 105, 0.15) 0px 2px 5px 0px, rgba(0, 0, 0, 0.05) 0px 1px 1px 0px;
 
     .post-title-area {
-      //background: url("/assets/images/title_background.jpg") center;
+      background: url("/assets/images/title_background.jpg") center;
       background-size: cover;
       height: 200px;
       display: table;
@@ -310,9 +326,15 @@ onMounted(() => {
           word-break: break-word;
           color: #0A5C0D;
           position: relative;
-          display: inline-block;
           top: -1px;
           font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas,Liberation Mono, monospace !important;
+        }
+
+        :not(pre) > code {
+          display: inline-block;
+          line-height: 1.2;
+          border: 1px solid #a5c0a6;
+          margin: 0 2px;
         }
         hr {
           margin: 30px 0;
@@ -453,6 +475,7 @@ onMounted(() => {
       }
 
     }
+
   }
 }
 

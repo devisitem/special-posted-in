@@ -3,28 +3,29 @@
     <MainHeader />
     <nuxt-page class="current-content" id="current-content-element" :page-key="route.fullPath" />
     <MainFooter />
-    <div class="background" :class="{ active : data.mobileNaviStore.isActive || searchStatus.isSearchMode }"
+    <div class="background" :class="{ active : data.mobileNaviStore.isActive || photoViewStatus.isPhotoView || searchStatus.isSearchMode }"
          v-on:click="methods.clickBackground($event)">
       <div v-if="searchStatus.isSearchMode" class="search-result-area">
         <div class="search-result-panel" v-on:click="$event.stopPropagation()">
           <SearchResult v-for="group in groups.values()" :key="group" :row="group" />
         </div>
       </div>
+      <PhotoView v-if="photoViewStatus.isPhotoView" v-on:click="$event.stopPropagation()" />
     </div>
     <LoadingBar />
   </div>
 </template>
 <script lang="ts" setup>
+import Runner from '@/service/DefaultStarterService'
+import appCache from "~/store/appCache";
 import MainHeader from "@/components/layout/header/MainHeader.vue";
 import LoadingBar from "@/components/layout/header/LoadingBar.vue";
 import SearchResult from "@/components/layout/header/SearchResult.vue"
-import { useDarkModeStore } from "@/store/DarkModeStore";
-import Runner from '@/service/DefaultStarterService'
-import {blogInfo, fileNodeMap} from "~/store/site";
-import {onBeforeMount, onMounted} from "vue";
-import {useHead} from "@vueuse/head";
-import {useSearchStatusStore} from "~/store/SearchStatusStore";
 import MainFooter from "~/components/layout/content/MainFooter.vue";
+import PhotoView from "~/components/layout/global/PhotoView.vue";
+import { useDarkModeStore } from "@/store/DarkModeStore";
+import {onMounted} from "vue";
+import {useHead} from "@vueuse/head";
 import {mobileNaviStore, postCallStore} from "~/store";
 import {PostSearchGroup} from "~/class/implement/PostSearchGroup";
 import {Pair} from "~/class/implement/Pair";
@@ -33,6 +34,8 @@ import {PostSearchResult} from "~/class/implement/PostSearchResult";
 import {groupingBy} from "~/utils/settingUtils";
 import {useNuxtApp} from "#app/nuxt";
 import {callPostFeed} from "~/utils/postUtil";
+import {useSearchStatusStore} from "~/store/SearchStatusStore";
+import {usePhotoViewStatusStore} from "~/store/PhotoViewStore";
 
 
 Runner.init()
@@ -41,6 +44,7 @@ const route = useRoute()
 const router = useRouter()
 const { $emitter }= useNuxtApp()
 const searchStatus = useSearchStatusStore()
+const photoViewStatus = usePhotoViewStatusStore()
 
 const components = {
   LoadingBar,
@@ -59,22 +63,22 @@ const searchLocationPair = ref<Pair<string, number>[]>([])
 const currentLocationIndex = ref(0)
 const methods = {
   clickBackground: (e: PointerEvent) => {
-    data.mobileNaviStore.isActive = false
-    searchStatus.cancelSearch()
+    if (searchStatus.isSearchMode) {
+      data.mobileNaviStore.isActive = false
+      searchStatus.cancelSearch()
+    } else if (photoViewStatus.isPhotoView) {
+      photoViewStatus.close()
+    }
   }
 }
 
 
 onMounted(() => {
 
-  document.addEventListener('keydown', (e) => {
-
-  })
-
   //검색 결과
   $emitter.on('searchText', (result: PostSearchResult[]) => {
     const map: Map<string, PostSearchResult[]> = groupingBy<string, PostSearchResult>(result, (result)=> {
-      const node = fileNodeMap.store.get(result.content.path)
+      const node = appCache.fileNodeMap.store.get(result.content.path)
       return node.group
     })
 
@@ -113,8 +117,8 @@ onMounted(() => {
     })
 
     const array = [...groups.value.values()]
-    const pairs = array.map(val => val.results.map((res, idx) => new Pair<string, number>(val.icon, idx))).flat()
-    searchLocationPair.value = pairs
+    searchLocationPair.value = array.map(val => val.results.map((res, idx) => new Pair<string, number>(val.icon, idx)))
+        .flat()
     currentLocationIndex.value = 0
 
     // const status = array.map(group => `\n(${group.results.length}) ${group.icon}\n${group.results.map((re, i) => `\t[${re.status}]${++i}. ${re.content.header.title}`).join('\n')}`).join('\n')
@@ -188,6 +192,10 @@ onMounted(() => {
       callPostFeed()
     }
 
+    appCache.scrollStatus.on()
+    appCache.scrollStatus.loadHeader()
+    appCache.scrollStatus.checkScroll()
+
   }
   window.addEventListener('scroll', handleForScroll)
 })
@@ -210,6 +218,10 @@ useHead({
   display: flex;
   flex-direction: column;
   background-color: $point-light-color;
+
+  .current-content {
+    padding-top: $pc-header-height;
+  }
 
   &.dark {
     background-color: $main-dark-color;

@@ -10,14 +10,14 @@
       </div>
     </div>
     <div class="tag-list-wrapper">
-      <TagArea :tags="Array.from(tagMap.store.keys())"/>
+      <TagArea :tags="Array.from(appCache.tagMap.store.keys())"/>
     </div>
     <div class="connected-post" v-show="data.bookedTag">
       <div class="current-booked-tag">
         <h2 class="booked-tag-name">{{ data.bookedTag }}</h2>
       </div>
       <div class="card-list-wrapper">
-        <a :href="post" v-for="(post, index) in data.displayed" :key="index">
+        <a :href="post.path" v-for="(post, index) in data.displayed" :key="index">
           <div class="connected-post-card">
             <div class="post-image">
               <img :src="post.header.thumbnail" />
@@ -33,25 +33,17 @@
           <nav aria-label="태그 검색 페이지 공간">
             <ul class="page-index">
               <li class="page-item" :class="{ disabled: !data.pagingResult.has_previous_page}">
-                <a :href="{ path: methods.getPage(data.currentPath, data.pagingResult.previous_page) }" class="page-link">이전</a>
+                <a :href="methods.getPage(data.currentPath, data.pagingResult.previous_page)" class="page-link">이전</a>
               </li>
               <li v-for="index in methods.rangeArray(data.pagingResult.first_page, data.pagingResult.last_page)"
                   :key="index" class="page-item"
                   :class="{ disabled: data.pagingResult.current_page === index}">
-                <NuxtLink :to="{
-
-                  path: methods.getPage(data.currentPath, index),
-
-                }" class="page-link">
+                <a :href="methods.getPage(data.currentPath, index)" class="page-link">
                   <span>{{ index }}</span>
-                </NuxtLink>
+                </a>
               </li>
               <li class="page-item" :class="{ disabled: !data.pagingResult.has_next_page}">
-                <NuxtLink :to="{
-
-                  path: methods.getPage(data.currentPath, data.pagingResult.next_page)
-
-                }" class="page-link">다음</NuxtLink>
+                <a :href="methods.getPage(data.currentPath, data.pagingResult.next_page)" class="page-link">다음</a>
               </li>
             </ul>
           </nav>
@@ -62,9 +54,9 @@
 </template>
 
 <script setup>
-import TagArea from "@/components/layout/content/component/post-card/TagArea.vue";
-import { tagMap } from "@/store/site";
-import {postMapStore} from "@/store";
+import TagArea from "~/components/layout/content/component/post-card/TagArea.vue";
+import appCache from "~/store/appCache";
+import {postMapStore} from "~/store";
 import {useRoute} from "#app";
 import Paginator from 'paginator'
 
@@ -74,12 +66,12 @@ const params = route.params
 const path = route.fullPath
 const booked = params.tag ? params.tag : ''
 const page = params.page ? params.page : 0
-const bookedList = tagMap.store.get(booked)
+const bookedList = appCache.tagMap.store.get(booked)
 
 const decoded = decodeURI(booked)
-const isNotUndefined = typeof bookedList != undefined
+const isNotUndefined = typeof bookedList !== undefined
 const postList = decoded && isNotUndefined
-    ? tagMap.store.get(decoded).map((path) => postMapStore.map.get(path))
+    ? appCache.tagMap.store.get(decoded).map((path) => postMapStore.map.get(path))
     : []
 
 const paginated = new Paginator(6, 4)
@@ -88,7 +80,7 @@ const paginated = new Paginator(6, 4)
 const displayedPosts = postList.slice(paginated.first_result, paginated.last_result +1)
 
 const data = {
-  tagMap,
+  tagMap: appCache.tagMap,
   currentPath: path,
   bookedTag: booked,
   posts: postList,
@@ -119,7 +111,7 @@ const methods = {
 $card-width: 200px;
 
 .tag-page-container {
-  width: 90%;
+  width: 600px;
   margin: 0 auto;
   min-height: 600px;
 
@@ -142,7 +134,7 @@ $card-width: 200px;
     .card-list-wrapper {
       display: flex;
       flex-direction: row;
-      justify-content: space-evenly;
+      justify-content: space-between;
       flex-wrap: wrap;
       max-width: calc($card-width * 3);
       margin: 20px auto;
