@@ -9,23 +9,15 @@ current-company: Herit Corporation
 current-position: Backend Server Developer
 summary: 선택 정렬
 excerpt-separator: <!--more-->
-hide: true
+hide: false
 ---
 기본 정렬 알고리즘중 하나인 선택 정렬(Selection Sort)입니다.
 간단한 그림과 함께 쉽게 이해할 수 있도록 정리했어요.
 <!--more-->
 
-
-## 선택정렬 (Selection Sort)
-
-
 🌸 선택 정렬은 정렬할 배열을 순회하며, 어떤 원소로 대치할지 선택하여 정렬하는 알고리즘 입니다.
 설명을 보기에 앞서, 통상적으로 정렬은 오름 또는 내림으로 배열의 수열을 맞추어 순서를 만드는 행위로 의미합니다.
-
 ---
-  
-  
-  
 
 <div class="array">
     <span>1</span>
@@ -38,6 +30,7 @@ hide: true
 
 
 > 정렬을 하기위해 배열을 준비합니다. 또한, 해당 배열을 순회하면서 *나머지들의 값들중 가장작은 값으로 변경합니다.
+:{ "type": "note", "icon": "info"}
 
 순회 인덱스 i: 0
 
@@ -51,6 +44,7 @@ hide: true
 </div>
 
 > 첫번째 순회요소는 나머지의 값들중 가장작은 값인 1 입니다. 따라서, 변경하지않습니다.
+:{ "type": "note", "icon": "info"}
 
 순회 인덱스 i: 1
 
@@ -64,6 +58,7 @@ hide: true
 </div>
 
 > 두번째는 4입니다. 나머지의 요소들중 가장작은값이 2가 존재합니다. 4와 2를 변경합니다. 다음 부터는 정렬 순서가 동일합니다. 배열의 끝까지 순회하며 나머지 값들로 선택후 변경으로 정렬합니다.
+:{ "type": "note", "icon": "info"}
 
 순회 인덱스 i: 2
 
@@ -111,8 +106,9 @@ hide: true
 
 ## 과정 코드
 
-* 요소 교환
-```java
+::code-group
+
+```java [요소 교환]
     /**
      * i 와 j 값 변경
      * 각 인덱스로 접근하므로 시간복잡도는 상수시간을 갖는다. O(1)
@@ -127,8 +123,7 @@ public static void swapElements(int [] array, int i, int j) {
 }
 ```
 
-* 최소값 찾기
-```java
+```java [최소값 찾기]
 /**
  * start 인덱스 부터 시작해서 끝까지 순회중 가장 작은 값을 리턴한다.
  * @param array
@@ -147,8 +142,7 @@ public static int indexLowest(int [] array, int start) {
 }
 ```
 
-* 최소값을 찾고, 변경
-```java
+```java [최소값을 찾고, 변경]
 /**
  * indexLowest 메서드를 통해 얻어온 가장작은값의 인덱스를 현재 인덱스와 변경한다.
  * @param array
@@ -164,6 +158,7 @@ public static void selectionSort(int [] array) {
 
 }
 ```
+::
 
 ### 호출
 
@@ -194,4 +189,5 @@ after selection sort : [1, 2, 3, 4, 5, 7]
 ```
 
 > 풀이 또는 잘못된 설명은 아래 댓글로 말씀 부탁드립니다.
+:{ "type": "note", "icon": "info"}
 

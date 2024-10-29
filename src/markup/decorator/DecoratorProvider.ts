@@ -2,7 +2,7 @@ import type IMarkdownDecorator from "@/markup/decorator/IMarkdownDecorator";
 import RuleType from "@/markup/constant/RuleType";
 import BlockquoteDecorator from "@/markup/decorator/implementation/BlockquoteDecorator";
 import HeadlineDecorator from "@/markup/decorator/implementation/HeadlineDecorator";
-import CodeBlockDecorator from "@/markup/decorator/implementation/CodeBlockDecorator";
+import CodeBlockDecorator from "@/markup/decorator/implementation/code-block-decorator";
 
 export default class DecoratorProvider {
 

@@ -4,11 +4,13 @@ import Token from "markdown-it/lib/token";
 import Renderer from "markdown-it/lib/renderer";
 import Filename from "@/classes/implement/Filename";
 import {getLanguageCode} from "@/utils/MarkdownUtils";
+import CodeBlockTitle from "@/markup/code-block-title";
 
 export default class CodeBlockDecorator implements IMarkdownDecorator {
 
     private readonly _number = /{([\d,-]+)}/;
     private readonly _wrapper = /^<pre .*?><code>/;
+    private readonly _nameRE = /^([^ ]+)[ ]?(?:\[(.*?)\])?/g;
 
     public decorate(markdownIt: MarkdownIt): void {
         const proxy = (tokens: Array<Token>, index: number, options: MarkdownIt.Options, env: any, self: Renderer) => self.renderToken(tokens, index, options);
@@ -28,27 +30,27 @@ export default class CodeBlockDecorator implements IMarkdownDecorator {
             const token = tokens[index];
 
             // @ts-ignore
-            if (!token.lineNumber) {
-                const rawInfo = token.info
+            if (!token.lineNumbers) {
+                const title = new CodeBlockTitle(token.info);
 
-                if (Filename.isFilename(rawInfo)) {
-                    return this.filenameFence(tokens, index, options, env, self);
+                // 빈문자열 인 경우, lang만 있는경우, lang와 description이 있는경우
+                if (title.hasDescription()) {
+                    return this.filenameFence(tokens, index, options, title);
                 }
 
-                if (!rawInfo || !this.numberRE.test(rawInfo)) {
-                    return this.languageFence(tokens, index, options, env, self);
-                }
+                return this.languageFence(tokens, index, options);
 
-                // ensure the next plugin get the correct lang.
-                token.info = rawInfo.replace(this.numberRE, '').trim();
-                const executed: RegExpExecArray = this.numberRE.exec(rawInfo)!
-
-                // @ts-ignore
-                token.lineNumbers = executed[1]
-                    .split(',')
-                    .map(v => v.split('-').map(v => parseInt(v, 10)))
+                // ensure the next plugin get the correct lang. 잠정적 중단 (라인 하이라이트)
+                // token.info = rawInfo.replace(this.numberRE, '').trim();
+                // const executed: RegExpExecArray = this.numberRE.exec(rawInfo)!
+                //
+                // token.lineNumbers = executed[1]
+                //     .split(',')
+                //     .map(v => v.split('-').map(v => parseInt(v, 10)))
 
             }
+
+            console.log('info with else', token.info);
 
             //Highlight for each languages.
             const code = options.highlight
@@ -100,31 +102,31 @@ export default class CodeBlockDecorator implements IMarkdownDecorator {
             .replace('extra-class', 'line-numbers-mode');
     }
 
-    private filenameFence(tokens: Array<Token>, index: number, options: MarkdownIt.Options, env: any, self: Renderer): string {
+    private filenameFence(tokens: Array<Token>, index: number, options: MarkdownIt.Options, title: any): string {
         const token = tokens[index];
-        const filename = new Filename(token.info);
+        token.info = title.lang;
 
         return `<div class="relative [&>pre]:!rounded-t-none [&>pre]:!my-0 my-5">
                     <div class="flex items-center gap-1.5 border border-gray-200 dark:border-gray-700 border-b-0 relative rounded-t-md px-4 py-3 not-prose">
-                        <span class="iconify i-vscode-icons:file-type-${getLanguageCode(filename.ext)}"></span>
-                        <span class="text-gray-700 dark:text-gray-200 text-sm/6">${token.info}</span>
+                        <span class="iconify i-vscode-icons:file-type-${getLanguageCode(title.lang)}"></span>
+                        <span class="text-gray-700 dark:text-gray-200 text-sm/6">${title.description}</span>
                     </div>
                     <button type="button" aria-label="Copy file code to clipbloard" tabindex="-1" class="focus:outline-none focus-visible:outline-0 disabled:cursor-not-allowed disabled:opacity-75 aria-disabled:cursor-not-allowed aria-disabled:opacity-75 flex-shrink-0 font-medium rounded-md text-xs gap-x-1.5 p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline-offset-4 hover:underline focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-primary-500 dark:focus-visible:ring-primary-400 inline-flex items-center absolute top-2.5 right-2.5">
                         <span class="iconify i-ph:copy flex-shrink-0 h-4 w-4" aria-hidden="true"></span>
                     </button>
-                    ${options.highlight?.(token.content, getLanguageCode(filename.ext), '')}
+                    ${options.highlight?.(token.content, getLanguageCode(title.lang), '')}
                </div>`
     }
 
-    private languageFence(tokens: Array<Token>, index: number, options: MarkdownIt.Options, env: any, self: Renderer): string {
+    private languageFence(tokens: Array<Token>, index: number, options: MarkdownIt.Options): string {
         const token = tokens[index];
-        const lang = token.info ? token.info.trim() : 'text';
+        console.log('in languageFence', token.info);
 
         return `<div class="relative">
                     <button type="button" aria-label="Copy code to clipbloard" tabindex="-1" class="focus:outline-none focus-visible:outline-0 disabled:cursor-not-allowed disabled:opacity-75 aria-disabled:cursor-not-allowed aria-disabled:opacity-75 flex-shrink-0 font-medium rounded-md text-xs gap-x-1.5 p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline-offset-4 hover:underline focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-primary-500 dark:focus-visible:ring-primary-400 inline-flex items-center absolute top-2.5 right-2.5">
                         <span class="iconify i-ph:copy flex-shrink-0 h-4 w-4" aria-hidden="true"></span>
                     </button>
-                    ${options.highlight?.(token.content, lang, '')}
+                    ${options.highlight?.(token.content, token.info, '')}
                </div>`
     }
 
@@ -136,5 +138,21 @@ export default class CodeBlockDecorator implements IMarkdownDecorator {
     get wrapperRe(): RegExp {
         this._wrapper.lastIndex = 0;
         return this._wrapper;
+    }
+
+    get nameRE(): RegExp {
+        this._nameRE.lastIndex = 0;
+        return this._nameRE;
+    }
+
+    private extractCodeBlockName(rawInfo: string): any {
+        const executed = this.nameRE.exec(rawInfo);
+        if (!executed) {
+            throw new Error("invalid format for code block description: " +executed);
+        }
+        return {
+            lang: executed[1] ?? "text",
+            description: executed[2] ?? ""
+        }
     }
 }
