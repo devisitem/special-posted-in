@@ -44,9 +44,19 @@ export default defineNuxtConfig({
     css: [
         '@fortawesome/fontawesome-svg-core/styles.css',
         '@styles/main.css',
-        '@styles/icons.css'
+        '@styles/icons.css',
     ],
-    modules: ['@pinia/nuxt', '@nuxt/image', '@nuxtjs/tailwindcss'],
+    vite: {
+        css: {
+            preprocessorOptions: {
+                scss: {
+                    additionalData: '@use "@styles/index.scss" as *;',
+                    api: 'modern'
+                }
+            }
+        }
+    },
+    modules: ['@pinia/nuxt', '@nuxt/image', '@nuxtjs/tailwindcss', '@nuxtjs/color-mode', '@nuxt/ui'],
     pinia: {
         storesDirs: ['@/store/**']
     },

@@ -30,7 +30,6 @@ const methods = {
 </script>
 
 <style lang="scss">
-@import '@styles/index';
 
 .post-tag-area {
   padding: 7px;
@@ -51,7 +50,6 @@ const methods = {
     span {
       margin: 3px 2px;
       border-radius: 3px;
-      background-color: #b7b4b4;
       font-size: .78rem;
       padding: 2px 10px;
       background-color: #2855ab;

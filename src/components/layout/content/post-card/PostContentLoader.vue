@@ -28,8 +28,7 @@
   </div>
 </template>
 
-<style lang="scss">
-@import '@styles/index';
+<style lang="scss" scoped>
 
 .content-loader {
 
@@ -38,14 +37,6 @@
     background-color: $main-light-color;
 
   }
-}
-
-@include tablet() {
-
-}
-
-@include mobile() {
-
 }
 
 .dark .content-loader {
