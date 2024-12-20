@@ -6,41 +6,38 @@ import CategoryContent from "@/classes/implement/CategoryContent";
 import CategoryGroup from "@/classes/implement/CategoryGroup";
 import PostCategoryTree from "@/components/layout/sidebar/PostCategoryTree.vue";
 import DocumentType from "@/classes/constant/document-type";
+import {useCategoriesStore} from "@/store/category-store";
 
 const postContentStore = usePostContentStore();
-const categories = computed(() => {
-  const temporary = new Array<ICategoryNode>();
+const categoryTree = computed(() => postContentStore.values(DocumentType.POST)
+    .filter(post => post.hasCategories)
+    .reduce((tree, post) => {
+      const foundGroup = findOrCreateGroup(tree, post.header.categories, 0);
+      foundGroup.addChild(new CategoryContent(false, post.header.title, post.path));
+      return tree;
+    }, new Array<ICategoryNode>()));
 
-  const contents = postContentStore.values(DocumentType.POST);
-
-  contents.forEach(post => {
-    const foundGroup = findOrCreateGroup(temporary, post.header.categories, 0);
-    foundGroup.addChild(new CategoryContent(false, post.header.title, post.path))
-  });
-  return temporary;
-});
-
-function findOrCreateGroup(existingGroups: Array<ICategoryNode>, newGroups: Array<string>, depth: number): CategoryGroup {
-  const currentGroup = newGroups[depth];
+function findOrCreateGroup(existingGroups: Array<ICategoryNode>, categories: Array<string>, depth: number): CategoryGroup {
+  const currentGroup = categories[depth];
   const found = existingGroups.find(exist => exist.isDirectory && exist.name === currentGroup);
   //존재하지 않는 경우 생성
   if (!found) {
     const isActive = props.groups.length > depth && props.groups[depth] === currentGroup;
     const newGroup = new CategoryGroup(true, currentGroup, !isActive);
     existingGroups.push(newGroup);
-    if (newGroups.length -1 === depth) {
+    if (categories.length -1 === depth) {
       return newGroup;
     }
-    return findOrCreateGroup(newGroup.children, newGroups, depth +1);
+    return findOrCreateGroup(newGroup.children, categories, depth +1);
   }
 
   const exist = found as CategoryGroup;
   //마지막 인덱스인경우 찾았으므로 처리
-  if (newGroups.length -1 === depth) {
+  if (categories.length -1 === depth) {
     return exist;
   }
 
-  return findOrCreateGroup(exist.children, newGroups, depth +1);
+  return findOrCreateGroup(exist.children, categories, depth +1);
 }
 
 const ui = {
@@ -59,7 +56,7 @@ const props = defineProps<{
   <aside class="hidden overflow-y-auto lg:block lg:max-h-[calc(100vh-var(--header-height))] lg:sticky lg:top-[--header-height] py-8 lg:px-4 lg:-mx-4">
     <div class="relative">
       <ul class="m-0">
-        <PostCategoryTree :categories="categories" :groups="groups" :depth="0" :path="path"/>
+        <PostCategoryTree :categories="categoryTree" :groups="groups" :depth="0" :path="path"/>
       </ul>
     </div>
   </aside>

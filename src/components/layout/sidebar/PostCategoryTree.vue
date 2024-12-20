@@ -25,7 +25,7 @@ const props = defineProps<{
 const isRange = props.groups && props.groups.length > props.depth;
 const group = props.groups[props.depth];
 const collapseGroup = ref((() => {
-  const directories = props.categories.filter(cat => cat.isDirectory)
+  const directories = props.categories?.filter(cat => cat.isDirectory)
       .map(cat => cat as CategoryGroup);
   return toValueMap<CategoryGroup, string, boolean>(directories, cat => cat.name, cat => cat.isCollapse);
 })())
